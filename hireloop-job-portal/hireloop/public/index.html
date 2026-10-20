@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HireLoop Job Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f4f3;--card:#fff;--ink:#17201f;--mut:#5f6b69;--line:#d9dfdd;--pri:#0f5c5a;--on:#fff;--acc:#e8a317;--bad:#b3341f;--ok:#1c7a3f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1514;--card:#17201f;--ink:#e8eeec;--mut:#9aa8a5;--line:#2a3735;--pri:#4fc3bd;--on:#08201f;--bad:#ff8a73;--ok:#6fd695}}
+:root[data-theme="dark"]{--bg:#0e1514;--card:#17201f;--ink:#e8eeec;--mut:#9aa8a5;--line:#2a3735;--pri:#4fc3bd;--on:#08201f;--bad:#ff8a73;--ok:#6fd695}
+*{box-sizing:border-box}[hidden]{display:none!important}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Public Sans',system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--pri);color:var(--on)}
+header b{font-size:20px;font-weight:800}
+.who button{background:transparent;color:inherit;border:1px solid currentColor;border-radius:6px;padding:6px 12px;margin-left:6px;cursor:pointer;font:inherit;opacity:.75}
+.who button[aria-pressed=true]{background:var(--acc);color:#1a1405;border-color:var(--acc);opacity:1;font-weight:600}
+.wrap{display:grid;grid-template-columns:190px 1fr;gap:20px;max-width:1100px;margin:0 auto;padding:20px}
+nav{display:flex;flex-direction:column;gap:4px}
+nav button{text-align:left;background:none;border:0;border-left:3px solid transparent;padding:9px 12px;color:var(--mut);font:inherit;cursor:pointer}
+nav button[aria-current=true]{border-left-color:var(--acc);color:var(--ink);font-weight:600;background:var(--card)}
+main{min-width:0}h2{margin:0 0 14px;font-size:22px}h3{margin:18px 0 8px;font-size:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.card h4{margin:0 0 2px;font-size:16px}.meta{color:var(--mut);font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+textarea{width:100%;min-height:70px}.row input,.row select{flex:1 1 150px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid>*{width:100%}.grid .full{grid-column:1/-1}
+button.b{background:var(--pri);color:var(--on);border:0;border-radius:6px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.g{background:none;color:var(--pri);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font:inherit;cursor:pointer}
+button.d{color:var(--bad)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.tw{overflow-x:auto;margin-bottom:12px}table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:600;font-size:13px}
+td .g{margin:0 4px 4px 0}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--line)}
+.p-approved,.p-hired,.p-shortlisted{color:var(--ok);border-color:var(--ok)}.p-rejected{color:var(--bad);border-color:var(--bad)}.p-pending,.p-submitted{color:var(--mut)}
+.bar{display:grid;grid-template-columns:130px 1fr 30px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.bar i{display:block;height:12px;background:var(--pri);border-radius:3px;min-width:2px}
+.empty{color:var(--mut);padding:18px;border:1px dashed var(--line);border-radius:8px}
+.msg{font-size:13px;margin:4px 0;padding:5px 9px;background:var(--bg);border-radius:6px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+#toast.on{opacity:1}
+@media(max-width:700px){.wrap{grid-template-columns:1fr}nav{flex-direction:row;overflow-x:auto}nav button{border-left:0;border-bottom:3px solid transparent;white-space:nowrap}nav button[aria-current=true]{border-bottom-color:var(--acc)}.grid{grid-template-columns:1fr}}
+</style></head><body>
+<header><b id="site"></b><div class="who" id="who"></div></header>
+<div id="auth" class="card" style="max-width:380px;margin:40px 16px" hidden></div>
+<div class="wrap" hidden><nav id="nav"></nav><main id="main"></main></div>
+<div id="toast" role="status"></div>
+<script>
+const ST=['Submitted','Reviewed','Shortlisted','Rejected','Hired'];
+const TABS={admin:[['users','Users'],['jobs','Job listings'],['stats','Statistics'],['activity','Live activity'],['settings','Settings']],
+employer:[['post','Post a job'],['jobs','My jobs'],['apps','Applications'],['stats','Statistics']],
+seeker:[['search','Find jobs'],['apps','My applications'],['profile','Profile'],['recs','Recommended']]};
+const LBL={admin:'Admin',employer:'Employer',seeker:'Job seeker'},WHO={get employer(){return ME.id},get seeker(){return ME.id}};
+let role='seeker',tab='search',applying=null,editing=null,q={k:'',l:'',t:''};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const v=id=>document.getElementById(id)?.value.trim()||'';
+let S={users:[],jobs:[],apps:[],msgs:[],log:[],cfg:{}},ME=null,reg=false;
+const me=()=>ME;
+const uname=id=>S.users.find(u=>u.id===id)?.name||'Unknown';
+const job=id=>S.jobs.find(j=>j.id===id);
+const pill=s=>`<span class="pill p-${s.toLowerCase()}">${esc(s)}</span>`;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.className='on';clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',2500)}
+const opts=(a,s)=>a.map(x=>`<option${x===s?' selected':''}>${x}</option>`).join('');
+const table=(h,rows)=>rows.length?`<div class="tw"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></div>`:'<p class="empty">Nothing here yet.</p>';
+const bars=a=>{const m=Math.max(1,...a.map(x=>x[1]));return`<div class="card">${a.map(([l,n])=>`<div class="bar"><span>${esc(l)}</span><i style="width:${n/m*100}%"></i><b>${n}</b></div>`).join('')}</div>`};
+const count=(arr,f)=>{const o={};arr.forEach(x=>{const k=f(x);o[k]=(o[k]||0)+1});return Object.entries(o)};
+
+const api=async(p,b)=>{const r=await fetch('/api/'+p,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Something went wrong.');return d};
+async function load(){const d=await api('state');S=d.state;ME=d.me}
+async function act(a,p={},fn){try{const d=await api('act',{a,...p});if(fn)fn();await load();toast(d.msg)}catch(e){toast(e.message)}draw()}
+const rd=f=>new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result.split(',')[1]);x.readAsDataURL(f)});
+const A={
+ async tab(t){tab=t;applying=null;if(t!=='post'&&t!=='users')editing=null;try{await load()}catch(e){}draw()},
+ find(){q={k:v('qk'),l:v('ql'),t:document.getElementById('qt').value};draw()},
+ userSave(){act('userSave',{id:editing,name:v('un'),email:v('ue'),role:document.getElementById('ur').value,password:document.getElementById('up').value},()=>editing=null)},
+ userEdit(id){editing=id;draw()},
+ userDel(id){if(confirm('Delete this user and their data?'))act('userDel',{id})},
+ jobSet(id,status){act('jobSet',{id,status})},
+ jobDel(id){if(confirm('Delete this job and its applications?'))act('jobDel',{id})},
+ jobEdit(id){editing=id;tab='post';draw()},
+ post(){act('post',{id:editing,title:v('jt'),loc:v('jl'),type:document.getElementById('jy').value,salary:v('js'),desc:v('jd'),req:v('jr')},()=>{editing=null;tab='jobs'})},
+ apply(id){applying=id;draw()},
+ submit(id){act('submit',{id,cover:v('cv')},()=>applying=null)},
+ status(id,status){act('status',{id,status})},
+ msg(id){act('msg',{id,text:v('m'+id)})},
+ async profile(){const f=document.getElementById('pf').files[0];if(f&&f.size>S.cfg.maxMB*1048576)return toast('File is too large.');act('profile',{name:v('pn'),skills:v('ps'),file:f&&{name:f.name,data:await rd(f)}})},
+ cfg(){act('cfg',{site:v('cs'),approve:document.getElementById('ca').checked,reg:document.getElementById('cr').checked,maxMB:v('cm')})},
+ async auth(){try{await api(reg?'register':'login',{name:v('an'),role:document.getElementById('ar')?.value,company:v('ac'),email:v('ae'),password:document.getElementById('ap').value});await boot()}catch(e){toast(e.message)}},
+ async logout(){await api('logout',{});ME=null;boot()}
+};
+
+const jobCard=(j,extra='')=>{const done=S.apps.some(a=>a.job===j.id&&a.user===WHO.seeker);
+ return`<div class="card"><h4>${esc(j.title)}</h4><div class="meta">${esc(j.company)} · ${esc(j.loc)} · ${esc(j.type)} · ${esc(j.salary)}</div><p>${esc(j.desc)}</p><div class="meta">Requires: ${esc(j.req)}</div><p>${extra}${done?pill('Submitted')+' You applied':`<button class="b" onclick="A.apply(${j.id})">Apply</button>`}</p>
+ ${applying===j.id?`<textarea id="cv" placeholder="Cover letter"></textarea><p class="meta">Resume: ${esc(me('seeker').resume||'none, add one in Profile')}</p><button class="b" onclick="A.submit(${j.id})">Send application</button>`:''}</div>`};
+
+const R={
+admin:{
+ users(){const u=editing&&S.users.find(x=>x.id===editing)||{};return`<h2>Users</h2><div class="row"><input id="un" placeholder="Name" value="${esc(u.name)}"><input id="ue" placeholder="Email" value="${esc(u.email)}"><input id="up" type="password" placeholder="Password (min 8)" autocomplete="new-password"><select id="ur">${opts(['admin','employer','seeker'],u.role||'seeker')}</select><button class="b" onclick="A.userSave()">${editing?'Save user':'Add user'}</button></div>`+
+  table(['Name','Email','Role',''],S.users.map(x=>[esc(x.name),esc(x.email),x.role,`<button class="g" onclick="A.userEdit('${x.id}')">Edit</button><button class="g d" onclick="A.userDel('${x.id}')">Delete</button>`]))},
+ jobs(){return`<h2>Job listings</h2>`+table(['Title','Company','Status',''],S.jobs.map(j=>[esc(j.title),esc(j.company),pill(j.status),`<button class="g" onclick="A.jobSet(${j.id},'approved')">Approve</button><button class="g d" onclick="A.jobSet(${j.id},'rejected')">Reject</button>`]))},
+ stats(){return`<h2>Statistics</h2><h3>Jobs by status</h3>`+bars(count(S.jobs,j=>j.status))+`<h3>Applications by status</h3>`+bars(count(S.apps,a=>a.status))+`<h3>Users by role</h3>`+bars(count(S.users,u=>u.role))+`<h3>Applications per job</h3>`+bars(S.jobs.map(j=>[j.title,S.apps.filter(a=>a.job===j.id).length]))},
+ activity(){return`<h2>Live activity</h2><p class="meta">Updates every few seconds.</p>`+(S.log.map(l=>`<div class="msg">${esc(l)}</div>`).join(''))},
+ settings(){const c=S.cfg;return`<h2>System settings</h2><div class="card grid"><label class="full">Site name<input id="cs" value="${esc(c.site)}"></label><label><input type="checkbox" id="ca"${c.approve?' checked':''}> Require approval for new jobs</label><label><input type="checkbox" id="cr"${c.reg?' checked':''}> Allow new registrations</label><label>Max resume size (MB)<input id="cm" type="number" value="${c.maxMB}"></label><div class="full"><button class="b" onclick="A.cfg()">Save settings</button></div></div>`}},
+employer:{
+ post(){const j=editing&&job(editing)||{};return`<h2>${editing?'Edit job':'Post a job'}</h2><div class="card grid"><input id="jt" placeholder="Job title" value="${esc(j.title)}"><input id="jl" placeholder="Location" value="${esc(j.loc)}"><select id="jy">${opts(['Full-time','Part-time','Contract','Internship'],j.type)}</select><input id="js" placeholder="Salary" value="${esc(j.salary)}"><textarea class="full" id="jd" placeholder="Description">${esc(j.desc)}</textarea><textarea class="full" id="jr" placeholder="Requirements">${esc(j.req)}</textarea><div class="full"><button class="b" onclick="A.post()">${editing?'Update job':'Post job'}</button></div></div>`},
+ jobs(){const m=S.jobs.filter(j=>j.owner===WHO.employer);return`<h2>My jobs and history</h2>`+table(['Title','Status','Applicants',''],m.map(j=>[esc(j.title),pill(j.status),S.apps.filter(a=>a.job===j.id).length,`<button class="g" onclick="A.jobEdit(${j.id})">Edit</button><button class="g d" onclick="A.jobDel(${j.id})">Delete</button>`]))},
+ apps(){const m=S.apps.filter(a=>job(a.job)?.owner===WHO.employer);return`<h2>Applications</h2>`+(m.length?m.map(a=>`<div class="card"><h4>${esc(uname(a.user))} for ${esc(job(a.job).title)}</h4><div class="meta">Resume: <a href="/api/resume/${a.id}">${esc(a.resume)}</a> · ${esc(a.cover||'No cover letter')}</div><p><select onchange="A.status(${a.id},this.value)">${opts(ST,a.status)}</select></p>${S.msgs.filter(x=>x.app===a.id).map(x=>`<div class="msg">You: ${esc(x.text)}</div>`).join('')}<div class="row"><input id="m${a.id}" placeholder="Message to candidate"><button class="g" onclick="A.msg(${a.id})">Send</button></div></div>`).join(''):'<p class="empty">No applications yet. Approved jobs show up here once people apply.</p>')},
+ stats(){const m=S.jobs.filter(j=>j.owner===WHO.employer),ap=S.apps.filter(a=>m.some(j=>j.id===a.job));return`<h2>Application statistics</h2><h3>Applicants per job</h3>`+bars(m.map(j=>[j.title,S.apps.filter(a=>a.job===j.id).length]))+`<h3>Pipeline</h3>`+bars(ST.map(s=>[s,ap.filter(a=>a.status===s).length]))}},
+seeker:{
+ search(){return`<h2>Find jobs</h2><div class="row"><input id="qk" placeholder="Title or keyword" value="${esc(q.k)}"><input id="ql" placeholder="Location" value="${esc(q.l)}"><select id="qt"><option value="">Any type</option>${['Full-time','Part-time','Contract','Internship'].map(x=>`<option${q.t===x?' selected':''}>${x}</option>`).join('')}</select><button class="b" onclick="A.find()">Search</button></div>`+
+  (S.jobs.filter(j=>j.status==='approved'&&(!q.k||(j.title+j.company+j.desc+j.req).toLowerCase().includes(q.k.toLowerCase()))&&(!q.l||j.loc.toLowerCase().includes(q.l.toLowerCase()))&&(!q.t||j.type===q.t)).map(j=>jobCard(j)).join('')||'<p class="empty">No jobs match. Clear a filter or try a broader keyword.</p>')},
+ apps(){const m=S.apps.filter(a=>a.user===WHO.seeker),open=m.filter(a=>!['Rejected','Hired'].includes(a.status)),old=m.filter(a=>!open.includes(a));
+  const t=l=>table(['Job','Company','Status','Messages'],l.map(a=>[esc(job(a.job)?.title),esc(job(a.job)?.company),pill(a.status),S.msgs.filter(x=>x.app===a.id).map(x=>`<div class="msg">${esc(x.text)}</div>`).join('')||'-']));
+  return`<h2>My applications</h2><h3>In progress</h3>`+t(open)+`<h3>History</h3>`+t(old)},
+ profile(){const u=me('seeker');return`<h2>Profile</h2><div class="card grid"><input id="pn" placeholder="Name" value="${esc(u.name)}"><input id="pe" value="${esc(u.email)}" readonly><input class="full" id="ps" placeholder="Skills, comma separated" value="${esc(u.skills)}"><label class="full">Resume (PDF or Word, up to ${S.cfg.maxMB} MB). Current: ${esc(u.resume||'none')}<input type="file" id="pf" accept=".pdf,.doc,.docx"></label><div class="full"><button class="b" onclick="A.profile()">Save profile</button></div></div>`},
+ recs(){const sk=(me('seeker').skills||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
+  const r=S.jobs.filter(j=>j.status==='approved').map(j=>[j,sk.filter(s=>(j.title+j.req+j.desc).toLowerCase().includes(s))]).filter(x=>x[1].length).sort((a,b)=>b[1].length-a[1].length);
+  return`<h2>Recommended for you</h2>`+(r.map(([j,m])=>jobCard(j,`<span class="meta">Matches: ${esc(m.join(', '))}&nbsp;&nbsp;</span>`)).join('')||'<p class="empty">No matches yet. Add skills in your profile to get recommendations.</p>')}}};
+
+function draw(){
+ document.getElementById('site').textContent=S.cfg.site;
+ document.title=S.cfg.site+' Job Portal';
+ document.getElementById('who').innerHTML=`<span>${esc(ME.name)} (${LBL[role]})</span><button onclick="A.logout()">Sign out</button>`;
+ document.getElementById('nav').innerHTML=TABS[role].map(([k,l])=>`<button aria-current="${k===tab}" onclick="A.tab('${k}')">${l}</button>`).join('');
+ document.getElementById('main').innerHTML=R[role][tab]();
+}
+function authDraw(){document.getElementById('site').textContent='HireLoop';document.getElementById('who').innerHTML='';document.getElementById('auth').innerHTML=`<h2>${reg?'Create your account':'Sign in'}</h2><div class="grid">${reg?'<input class="full" id="an" placeholder="Full name" autocomplete="name"><select class="full" id="ar"><option value="seeker">I am looking for a job</option><option value="employer">I am hiring</option></select><input class="full" id="ac" placeholder="Company name (employers only)">':''}<input class="full" id="ae" type="email" placeholder="Email" autocomplete="email"><input class="full" id="ap" type="password" placeholder="Password (min 8 characters)" autocomplete="${reg?'new':'current'}-password" onkeydown="if(event.key==='Enter')A.auth()"><button class="b full" onclick="A.auth()">${reg?'Create account':'Sign in'}</button><button class="g full" onclick="reg=!reg;authDraw()">${reg?'I already have an account':'Create an account'}</button></div>`}
+async function boot(){try{await load()}catch(e){ME=null}
+ const a=document.getElementById('auth'),w=document.querySelector('.wrap');
+ if(!ME){w.hidden=true;a.hidden=false;return authDraw()}
+ a.hidden=true;w.hidden=false;role=ME.role;tab=TABS[role][0][0];applying=editing=null;draw()}
+setInterval(()=>{if(ME&&role==='admin'&&tab==='activity')load().then(draw).catch(()=>{})},6000);
+boot();
+</script></body></html>

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hireloop
+    runtime: node
+    plan: starter            # persistent disks need a paid plan
+    buildCommand: "true"
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    disk: { name: data, mountPath: /data, sizeGB: 1 }
+    envVars:
+      - { key: DATA_DIR, value: /data }
+      - { key: SESSION_SECRET, generateValue: true }
+      - { key: ADMIN_EMAIL, sync: false }
+      - { key: ADMIN_PASSWORD, sync: false }

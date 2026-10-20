@@ -1,0 +1,9 @@
+{
+  "name": "hireloop-job-portal",
+  "version": "1.0.0",
+  "description": "Online job portal with Admin, Employer and Job Seeker dashboards",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
